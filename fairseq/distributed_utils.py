@@ -104,6 +104,7 @@ def infer_init_method(cfg: DistributedTrainingConfig, force_distributed=False):
 
     # we can determine the init method automatically for Slurm
     elif cfg.distributed_port > 0:
+        logger.info("Trying to get distributed configuation from SLURM")
         node_list = os.environ.get("SLURM_STEP_NODELIST")
         if node_list is None:
             node_list = os.environ.get("SLURM_JOB_NODELIST")
@@ -157,6 +158,28 @@ def infer_init_method(cfg: DistributedTrainingConfig, force_distributed=False):
                 raise e
             except FileNotFoundError:  # Slurm is not installed
                 pass
+        
+        # Try LSF 
+        else:
+            try:
+                logger.info("Trying to get distributed configuation from LSF")
+                get_master = "echo $(cat {} | sort | uniq | grep -v batch | grep -v login | head -1)".format(
+                    os.environ['LSB_DJOB_HOSTFILE'])
+                master_addr = str(subprocess.check_output(get_master, shell=True))[2:-3]            
+                cfg.distributed_init_method = "tcp://{host}:{port}".format(
+                    host=master_addr,
+                    port=cfg.distributed_port,
+                )
+                gpus_per_node = torch.cuda.device_count()
+                cfg.distributed_world_size = int(os.environ['OMPI_COMM_WORLD_SIZE']) * gpus_per_node
+                cfg.distributed_rank = int(os.environ['OMPI_COMM_WORLD_RANK']) * gpus_per_node
+                cfg.device_id = int(os.environ['OMPI_COMM_WORLD_LOCAL_RANK'])
+                
+            except subprocess.CalledProcessError as e:  # scontrol failed
+                raise e
+            except FileNotFoundError:  # LSF is not installed
+                pass                
+
 
     elif cfg.distributed_world_size > 1 or force_distributed:
         # fallback for single node with multiple GPUs
