@@ -144,7 +144,7 @@ class MaskedLMTask(LegacyFairseqTask):
             split,
             self.args.shorten_data_split_list,
             self.args.shorten_method,
-            self.args.tokens_per_sample,
+            self.args.tokens_per_sample - 1,  # one less for <s>
             self.args.seed,
         )
 
