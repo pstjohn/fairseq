@@ -9,11 +9,11 @@ import re
 SPACE_NORMALIZER = re.compile(r"\s+")
 
 
-# def tokenize_line(line):
-#     line = SPACE_NORMALIZER.sub(" ", line)
-#     line = line.strip()
-#     return line.split()
-
 def tokenize_line(line):
-    """For character-level model"""
-    return list(line.strip())
+    line = SPACE_NORMALIZER.sub(" ", line)
+    line = line.strip()
+    return line.split()
+
+# def tokenize_line(line):
+#     """For character-level model"""
+#     return list(line.strip())
